@@ -7,7 +7,7 @@ import requests
 app = Flask(__name__)
 
 
-@app.route('/api/weather', methods=['GET'])
+@app.route('/api/weather2', methods=['GET'])
 def get_weather():
     # 리액트에서 전송한 x, y 좌표를 받음
 
@@ -56,20 +56,20 @@ def get_weather():
     try:
         r = requests.get(url, params=req_parameter)
     except requests.exceptions.RequestException as e:
-        print(f"An error occurred while making a request: {e}")
+        # print(f"An error occurred while making a request: {e}")
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
     # JSON 형태로 응답받은 데이터를 딕셔너리로 변환
     dict_data = r.json()
 
     # 출력을 이쁘게 하기 위해 json.dumps()를 사용하여 들여쓰기(indent) 옵션을 지정
-    print(json.dumps(dict_data, indent=2))
+    # print(json.dumps(dict_data, indent=2))
 
     # 딕셔너리 데이터를 분석하여 원하는 데이터를 추출
     weather_items = dict_data['response']['body']['items']['item']
-
-    print(f"[ 발표 날짜 : {weather_items[0]['baseDate']} ]")
-    print(f"[ 발표 시간 : {weather_items[0]['baseTime']} ]")
+    print(weather_items)
+    # print(f"[ 발표 날짜 : {weather_items[0]['baseDate']} ]")
+    # print(f"[ 발표 시간 : {weather_items[0]['baseTime']} ]")
 
     weather_data = {}
 
@@ -77,16 +77,31 @@ def get_weather():
         weather_item = weather_items[k]
         obsrValue = weather_item['obsrValue']
         if weather_item['category'] == 'T1H':
-            weather_data['tmp'] = f"{obsrValue}℃"
+            weather_data['temperature'] = f"{obsrValue}°"
         elif weather_item['category'] == 'REH':
-            weather_data['hum'] = f"{obsrValue}%"
+            weather_data['humidity'] = f"{obsrValue}%"
         elif weather_item['category'] == 'RN1':
             weather_data['rain'] = f"{obsrValue}mm"
         elif weather_item['category'] == 'PTY':
-            weather_data['condition'] = obsrValue
+            # 날씨 상태 값을 문자열로 변환
+            conditions = {
+                '0': '맑음',
+                '1': '비',
+                '2': '비/눈',
+                '3': '눈',
+                '5': '빗방울',
+                '6': '빗방울 눈날림',
+                '7': '눈날림'
+            }
+            weather_data['condition'] = conditions.get(str(obsrValue), obsrValue)
+        elif weather_item['category'] == 'WSD':
+            weather_data['wind'] = f"{obsrValue}m/s"
     # 딕셔너리를 JSON 형태로 변환
     json_weather = json.dumps(weather_data, ensure_ascii=False, indent=4)
     return json_weather
 
+
 if __name__ == '__main__':
     app.run(debug=True)
+
+
